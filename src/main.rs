@@ -45,8 +45,10 @@ fn main() {
         toml::from_str(include_str!("../Config.toml")).unwrap();
     let args = std::env::args().collect::<Vec<String>>();
     let mode = args.get(1).expect("Missing mode argument");
+
     FAILOVER_ADDR.get_or_init(|| config.failover.to_string());
     RECEIVER_ADDR.get_or_init(|| config.receiver.to_string());
+
     match &mode[..] {
         "Sender" => send("Master"),
         "Failover" => failover(),
@@ -103,6 +105,7 @@ fn failover() {
     let mut buf = [0; 64];
     let failover = Arc::new(Mutex::new(false));
     let failover_cloned = Arc::clone(&failover);
+
     thread::spawn(move || loop {
         loop {
             thread::sleep(Duration::from_secs(2));
@@ -115,6 +118,7 @@ fn failover() {
             }
         }
     });
+
     loop {
         let (size, _) = socket.recv_from(&mut buf).unwrap();
         let message = str::from_utf8(&buf[..size]).unwrap()
